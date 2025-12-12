@@ -1,0 +1,1002 @@
+
+--[[
+═══════════════════════════════════════════════════════════════════════════════
+    RALLY UI LIBRARY - BLACK & PURPLE THEME
+    Features: Auto-load configs, Create new configs, Clean design
+═══════════════════════════════════════════════════════════════════════════════
+--]]
+
+local Players = game:GetService('Players')
+local RunService = game:GetService('RunService')
+local UserInputService = game:GetService('UserInputService')
+local TweenService = game:GetService('TweenService')
+local HttpService = game:GetService('HttpService')
+
+local RallyUI = {}
+RallyUI.__index = RallyUI
+
+-- Config Management
+local ConfigManager = {}
+ConfigManager.__index = ConfigManager
+
+function ConfigManager.new()
+    local self = setmetatable({}, ConfigManager)
+    self.configFolder = "RallyConfigs"
+    self.currentConfig = nil
+    self.configs = {}
+    
+    -- Ensure config folder exists
+    if not isfolder(self.configFolder) then
+        makefolder(self.configFolder)
+    end
+    
+    return self
+end
+
+function ConfigManager:SaveConfig(configName, settings)
+    local success, err = pcall(function()
+        local configPath = self.configFolder .. "/" .. configName .. ".json"
+        local data = HttpService:JSONEncode(settings)
+        writefile(configPath, data)
+        self.currentConfig = configName
+    end)
+    return success
+end
+
+function ConfigManager:LoadConfig(configName)
+    local success, result = pcall(function()
+        local configPath = self.configFolder .. "/" .. configName .. ".json"
+        if isfile(configPath) then
+            local data = readfile(configPath)
+            return HttpService:JSONDecode(data)
+        end
+        return nil
+    end)
+    
+    if success and result then
+        self.currentConfig = configName
+        return result
+    end
+    return nil
+end
+
+function ConfigManager:DeleteConfig(configName)
+    local success, err = pcall(function()
+        local configPath = self.configFolder .. "/" .. configName .. ".json"
+        if isfile(configPath) then
+            delfile(configPath)
+            if self.currentConfig == configName then
+                self.currentConfig = nil
+            end
+        end
+    end)
+    return success
+end
+
+function ConfigManager:GetConfigs()
+    local configs = {}
+    local success, err = pcall(function()
+        if isfolder(self.configFolder) then
+            for _, file in ipairs(listfiles(self.configFolder)) do
+                local fileName = file:match("([^/\\]+)%.json$")
+                if fileName then
+                    table.insert(configs, fileName)
+                end
+            end
+        end
+    end)
+    return configs
+end
+
+function ConfigManager:AutoLoad()
+    local configs = self:GetConfigs()
+    if #configs > 0 then
+        -- Load the first config found
+        return self:LoadConfig(configs[1])
+    end
+    return nil
+end
+
+-- Main UI
+function RallyUI:CreateWindow(config)
+    config = config or {}
+    local self = setmetatable({}, RallyUI)
+
+    self.WindowName = config.Name or 'Rally'
+    self.Tabs = {}
+    self.TabOrder = {}
+    self.CurrentTab = nil
+    self.Settings = {}
+    self.ConfigManager = ConfigManager.new()
+
+    self:CreateMainUI()
+    self:BindToggleKey()
+    
+    -- Auto-load config on startup
+    task.spawn(function()
+        task.wait(0.5)
+        local loadedSettings = self.ConfigManager:AutoLoad()
+        if loadedSettings then
+            self:ApplySettings(loadedSettings)
+            self:Notify("Config Auto-Loaded", "Loaded: " .. (self.ConfigManager.currentConfig or "Unknown"))
+        end
+    end)
+
+    return self
+end
+
+function RallyUI:CreateMainUI()
+    self.ScreenGui = Instance.new('ScreenGui')
+    self.ScreenGui.Name = 'RallyUI'
+    self.ScreenGui.ResetOnSpawn = false
+    self.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    self.ScreenGui.Parent = Players.LocalPlayer:WaitForChild('PlayerGui')
+
+    self.MainFrame = Instance.new('Frame')
+    self.MainFrame.Name = 'MainFrame'
+    self.MainFrame.Size = UDim2.new(0, 550, 0, 450)
+    self.MainFrame.Position = UDim2.new(0.5, -275, 0.5, -225)
+    self.MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    self.MainFrame.BorderSizePixel = 0
+    self.MainFrame.ClipsDescendants = true
+    self.MainFrame.Parent = self.ScreenGui
+
+    local corner = Instance.new('UICorner')
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = self.MainFrame
+
+    local stroke = Instance.new('UIStroke')
+    stroke.Color = Color3.fromRGB(138, 43, 226) -- Purple
+    stroke.Thickness = 2
+    stroke.Transparency = 0
+    stroke.Parent = self.MainFrame
+
+    self.TitleBar = Instance.new('Frame')
+    self.TitleBar.Name = 'TitleBar'
+    self.TitleBar.Size = UDim2.new(1, 0, 0, 45)
+    self.TitleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+    self.TitleBar.BorderSizePixel = 0
+    self.TitleBar.Parent = self.MainFrame
+
+    local titleCorner = Instance.new('UICorner')
+    titleCorner.CornerRadius = UDim.new(0, 12)
+    titleCorner.Parent = self.TitleBar
+
+    local titleBottom = Instance.new('Frame')
+    titleBottom.Size = UDim2.new(1, 0, 0, 12)
+    titleBottom.Position = UDim2.new(0, 0, 1, -12)
+    titleBottom.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+    titleBottom.BorderSizePixel = 0
+    titleBottom.Parent = self.TitleBar
+
+    local accentLine = Instance.new('Frame')
+    accentLine.Size = UDim2.new(1, 0, 0, 2)
+    accentLine.Position = UDim2.new(0, 0, 1, 0)
+    accentLine.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+    accentLine.BorderSizePixel = 0
+    accentLine.Parent = self.TitleBar
+
+    local titleText = Instance.new('TextLabel')
+    titleText.Name = 'Title'
+    titleText.Size = UDim2.new(1, -80, 1, 0)
+    titleText.Position = UDim2.new(0, 15, 0, 0)
+    titleText.BackgroundTransparency = 1
+    titleText.Text = self.WindowName
+    titleText.TextColor3 = Color3.fromRGB(138, 43, 226)
+    titleText.TextSize = 18
+    titleText.Font = Enum.Font.GothamBold
+    titleText.TextXAlignment = Enum.TextXAlignment.Left
+    titleText.Parent = self.TitleBar
+
+    local minimizeButton = Instance.new('TextButton')
+    minimizeButton.Name = 'MinimizeButton'
+    minimizeButton.Size = UDim2.new(0, 35, 0, 35)
+    minimizeButton.Position = UDim2.new(1, -75, 0.5, -17.5)
+    minimizeButton.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+    minimizeButton.BorderSizePixel = 0
+    minimizeButton.Text = '—'
+    minimizeButton.TextColor3 = Color3.fromRGB(200, 200, 210)
+    minimizeButton.TextSize = 16
+    minimizeButton.Font = Enum.Font.GothamBold
+    minimizeButton.Parent = self.TitleBar
+
+    local minCorner = Instance.new('UICorner')
+    minCorner.CornerRadius = UDim.new(0, 6)
+    minCorner.Parent = minimizeButton
+
+    local closeButton = Instance.new('TextButton')
+    closeButton.Name = 'CloseButton'
+    closeButton.Size = UDim2.new(0, 35, 0, 35)
+    closeButton.Position = UDim2.new(1, -35, 0.5, -17.5)
+    closeButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+    closeButton.BorderSizePixel = 0
+    closeButton.Text = 'X' -- Changed from ✕ to X
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeButton.TextSize = 18
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.Parent = self.TitleBar
+
+    local closeCorner = Instance.new('UICorner')
+    closeCorner.CornerRadius = UDim.new(0, 6)
+    closeCorner.Parent = closeButton
+
+    self.TabContainer = Instance.new('ScrollingFrame')
+    self.TabContainer.Name = 'TabContainer'
+    self.TabContainer.Size = UDim2.new(0, 140, 1, -45)
+    self.TabContainer.Position = UDim2.new(0, 0, 0, 45)
+    self.TabContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+    self.TabContainer.BorderSizePixel = 0
+    self.TabContainer.ScrollBarThickness = 4
+    self.TabContainer.ScrollBarImageColor3 = Color3.fromRGB(138, 43, 226)
+    self.TabContainer.Parent = self.MainFrame
+
+    local tabLayout = Instance.new('UIListLayout')
+    tabLayout.Padding = UDim.new(0, 8)
+    tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    tabLayout.Parent = self.TabContainer
+
+    local tabPadding = Instance.new('UIPadding')
+    tabPadding.PaddingTop = UDim.new(0, 10)
+    tabPadding.PaddingLeft = UDim.new(0, 10)
+    tabPadding.PaddingRight = UDim.new(0, 10)
+    tabPadding.Parent = self.TabContainer
+
+    self.ContentContainer = Instance.new('Frame')
+    self.ContentContainer.Name = 'ContentContainer'
+    self.ContentContainer.Size = UDim2.new(1, -140, 1, -45)
+    self.ContentContainer.Position = UDim2.new(0, 140, 0, 45)
+    self.ContentContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    self.ContentContainer.BorderSizePixel = 0
+    self.ContentContainer.ClipsDescendants = true
+    self.ContentContainer.Parent = self.MainFrame
+
+    self:MakeDraggable(self.TitleBar)
+
+    minimizeButton.MouseEnter:Connect(function()
+        TweenService:Create(
+            minimizeButton,
+            TweenInfo.new(0.2),
+            { BackgroundColor3 = Color3.fromRGB(138, 43, 226) }
+        ):Play()
+    end)
+    minimizeButton.MouseLeave:Connect(function()
+        TweenService:Create(
+            minimizeButton,
+            TweenInfo.new(0.2),
+            { BackgroundColor3 = Color3.fromRGB(30, 30, 38) }
+        ):Play()
+    end)
+
+    closeButton.MouseEnter:Connect(function()
+        TweenService:Create(
+            closeButton,
+            TweenInfo.new(0.2),
+            { BackgroundColor3 = Color3.fromRGB(180, 40, 40) }
+        ):Play()
+    end)
+    closeButton.MouseLeave:Connect(function()
+        TweenService:Create(
+            closeButton,
+            TweenInfo.new(0.2),
+            { BackgroundColor3 = Color3.fromRGB(220, 50, 50) }
+        ):Play()
+    end)
+
+    closeButton.MouseButton1Click:Connect(function()
+        self:ToggleUI()
+    end)
+
+    minimizeButton.MouseButton1Click:Connect(function()
+        self:ToggleUI()
+    end)
+end
+
+function RallyUI:MakeDraggable(frame)
+    local dragging = false
+    local dragInput, mousePos, framePos
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            mousePos = input.Position
+            framePos = self.MainFrame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - mousePos
+            self.MainFrame.Position = UDim2.new(
+                framePos.X.Scale,
+                framePos.X.Offset + delta.X,
+                framePos.Y.Scale,
+                framePos.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
+
+function RallyUI:BindToggleKey()
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then
+            return
+        end
+        if input.KeyCode == Enum.KeyCode.K then
+            self:ToggleUI()
+        end
+    end)
+end
+
+function RallyUI:ToggleUI()
+    self.MainFrame.Visible = not self.MainFrame.Visible
+end
+
+function RallyUI:Notify(title, text)
+    pcall(function()
+        game.StarterGui:SetCore("SendNotification", {
+            Title = title;
+            Text = text;
+            Duration = 3;
+        })
+    end)
+end
+
+function RallyUI:CreateTab(tabName)
+    local tab = {
+        Name = tabName,
+        Elements = {},
+    }
+
+    local tabButton = Instance.new('TextButton')
+    tabButton.Name = tabName
+    tabButton.Size = UDim2.new(1, 0, 0, 40)
+    tabButton.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+    tabButton.BorderSizePixel = 0
+    tabButton.AutoButtonColor = false
+    tabButton.Text = ''
+    tabButton.LayoutOrder = #self.TabOrder + 1
+    tabButton.Parent = self.TabContainer
+
+    local tabCorner = Instance.new('UICorner')
+    tabCorner.CornerRadius = UDim.new(0, 8)
+    tabCorner.Parent = tabButton
+
+    local tabIcon = Instance.new('TextLabel')
+    tabIcon.Size = UDim2.new(0, 25, 1, 0)
+    tabIcon.Position = UDim2.new(0, 8, 0, 0)
+    tabIcon.BackgroundTransparency = 1
+    tabIcon.Text = '●'
+    tabIcon.TextColor3 = Color3.fromRGB(138, 43, 226)
+    tabIcon.TextSize = 18
+    tabIcon.Font = Enum.Font.GothamBold
+    tabIcon.Parent = tabButton
+
+    local tabText = Instance.new('TextLabel')
+    tabText.Size = UDim2.new(1, -35, 1, 0)
+    tabText.Position = UDim2.new(0, 35, 0, 0)
+    tabText.BackgroundTransparency = 1
+    tabText.Text = tabName
+    tabText.TextColor3 = Color3.fromRGB(150, 150, 165)
+    tabText.TextSize = 14
+    tabText.Font = Enum.Font.GothamMedium
+    tabText.TextXAlignment = Enum.TextXAlignment.Left
+    tabText.Parent = tabButton
+
+    local tabFrame = Instance.new('ScrollingFrame')
+    tabFrame.Name = tabName
+    tabFrame.Size = UDim2.new(1, -20, 1, -20)
+    tabFrame.Position = UDim2.new(0, 10, 0, 10)
+    tabFrame.BackgroundTransparency = 1
+    tabFrame.BorderSizePixel = 0
+    tabFrame.ScrollBarThickness = 6
+    tabFrame.ScrollBarImageColor3 = Color3.fromRGB(138, 43, 226)
+    tabFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    tabFrame.Visible = false
+    tabFrame.Parent = self.ContentContainer
+
+    local layout = Instance.new('UIListLayout')
+    layout.Padding = UDim.new(0, 8)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Parent = tabFrame
+
+    layout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+        tabFrame.CanvasSize =
+            UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
+    end)
+
+    tabButton.MouseEnter:Connect(function()
+        if self.CurrentTab ~= tabName then
+            TweenService:Create(
+                tabButton,
+                TweenInfo.new(0.2),
+                { BackgroundColor3 = Color3.fromRGB(25, 25, 33) }
+            ):Play()
+        end
+    end)
+
+    tabButton.MouseLeave:Connect(function()
+        if self.CurrentTab ~= tabName then
+            TweenService:Create(
+                tabButton,
+                TweenInfo.new(0.2),
+                { BackgroundColor3 = Color3.fromRGB(30, 30, 38) }
+            ):Play()
+        end
+    end)
+
+    tabButton.MouseButton1Click:Connect(function()
+        self:SwitchTab(tabName)
+    end)
+
+    tab.Button = tabButton
+    tab.Frame = tabFrame
+    tab.Icon = tabIcon
+    tab.Text = tabText
+    tab.Layout = layout
+    self.Tabs[tabName] = tab
+    table.insert(self.TabOrder, tabName)
+
+    self.TabContainer.CanvasSize = UDim2.new(0, 0, 0, #self.TabOrder * 48 + 20)
+
+    if not self.CurrentTab then
+        self:SwitchTab(tabName)
+    end
+
+    return tab
+end
+
+function RallyUI:SwitchTab(tabName)
+    for name, tab in pairs(self.Tabs) do
+        tab.Frame.Visible = false
+        TweenService:Create(
+            tab.Button,
+            TweenInfo.new(0.2),
+            { BackgroundColor3 = Color3.fromRGB(30, 30, 38) }
+        ):Play()
+        TweenService:Create(
+            tab.Text,
+            TweenInfo.new(0.2),
+            { TextColor3 = Color3.fromRGB(150, 150, 165) }
+        ):Play()
+        TweenService:Create(
+            tab.Icon,
+            TweenInfo.new(0.2),
+            { TextColor3 = Color3.fromRGB(138, 43, 226) }
+        ):Play()
+    end
+
+    if self.Tabs[tabName] then
+        self.Tabs[tabName].Frame.Visible = true
+        TweenService:Create(
+            self.Tabs[tabName].Button,
+            TweenInfo.new(0.2),
+            { BackgroundColor3 = Color3.fromRGB(138, 43, 226) }
+        ):Play()
+        TweenService:Create(
+            self.Tabs[tabName].Text,
+            TweenInfo.new(0.2),
+            { TextColor3 = Color3.fromRGB(255, 255, 255) }
+        ):Play()
+        TweenService:Create(
+            self.Tabs[tabName].Icon,
+            TweenInfo.new(0.2),
+            { TextColor3 = Color3.fromRGB(255, 255, 255) }
+        ):Play()
+        self.CurrentTab = tabName
+    end
+end
+
+function RallyUI:CreateButton(tab, config)
+    local button = Instance.new('TextButton')
+    button.Name = config.Name
+    button.Size = UDim2.new(1, 0, 0, 42)
+    button.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+    button.BorderSizePixel = 0
+    button.AutoButtonColor = false
+    button.Text = config.Name
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextSize = 14
+    button.Font = Enum.Font.GothamMedium
+    button.LayoutOrder = #tab.Elements + 1
+    button.Parent = tab.Frame
+
+    local corner = Instance.new('UICorner')
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = button
+
+    local stroke = Instance.new('UIStroke')
+    stroke.Color = Color3.fromRGB(138, 43, 226)
+    stroke.Thickness = 1
+    stroke.Transparency = 0.7
+    stroke.Parent = button
+
+    button.MouseEnter:Connect(function()
+        TweenService:Create(
+            button,
+            TweenInfo.new(0.2),
+            { BackgroundColor3 = Color3.fromRGB(138, 43, 226) }
+        ):Play()
+        TweenService:Create(stroke, TweenInfo.new(0.2), { Transparency = 0 })
+            :Play()
+    end)
+
+    button.MouseLeave:Connect(function()
+        TweenService:Create(
+            button,
+            TweenInfo.new(0.2),
+            { BackgroundColor3 = Color3.fromRGB(25, 25, 32) }
+        ):Play()
+        TweenService:Create(stroke, TweenInfo.new(0.2), { Transparency = 0.7 })
+            :Play()
+    end)
+
+    button.MouseButton1Click:Connect(function()
+        if config.Callback then
+            config.Callback()
+        end
+    end)
+
+    table.insert(tab.Elements, button)
+
+    return button
+end
+
+function RallyUI:CreateToggle(tab, config)
+    local toggleFrame = Instance.new('Frame')
+    toggleFrame.Name = config.Name
+    toggleFrame.Size = UDim2.new(1, 0, 0, 42)
+    toggleFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+    toggleFrame.BorderSizePixel = 0
+    toggleFrame.LayoutOrder = #tab.Elements + 1
+    toggleFrame.Parent = tab.Frame
+
+    local corner = Instance.new('UICorner')
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = toggleFrame
+
+    local stroke = Instance.new('UIStroke')
+    stroke.Color = Color3.fromRGB(138, 43, 226)
+    stroke.Thickness = 1
+    stroke.Transparency = 0.7
+    stroke.Parent = toggleFrame
+
+    local label = Instance.new('TextLabel')
+    label.Name = 'Label'
+    label.Size = UDim2.new(0.65, -15, 1, 0)
+    label.Position = UDim2.new(0, 12, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = config.Name
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 14
+    label.Font = Enum.Font.GothamMedium
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = toggleFrame
+
+    local toggleButton = Instance.new('TextButton')
+    toggleButton.Name = 'Toggle'
+    toggleButton.Size = UDim2.new(0, 50, 0, 26)
+    toggleButton.Position = UDim2.new(1, -62, 0.5, -13)
+    toggleButton.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    toggleButton.BorderSizePixel = 0
+    toggleButton.Text = ''
+    toggleButton.AutoButtonColor = false
+    toggleButton.Parent = toggleFrame
+
+    local toggleCorner = Instance.new('UICorner')
+    toggleCorner.CornerRadius = UDim.new(1, 0)
+    toggleCorner.Parent = toggleButton
+
+    local toggleCircle = Instance.new('Frame')
+    toggleCircle.Size = UDim2.new(0, 20, 0, 20)
+    toggleCircle.Position = UDim2.new(0, 3, 0.5, -10)
+    toggleCircle.BackgroundColor3 = Color3.fromRGB(200, 200, 210)
+    toggleCircle.BorderSizePixel = 0
+    toggleCircle.Parent = toggleButton
+
+    local circleCorner = Instance.new('UICorner')
+    circleCorner.CornerRadius = UDim.new(1, 0)
+    circleCorner.Parent = toggleCircle
+
+    local toggleState = config.CurrentValue or false
+    
+    -- Register setting
+    local settingId = config.Flag or config.Name
+    self.Settings[settingId] = {
+        Type = "Toggle",
+        Value = toggleState,
+        Element = toggleFrame,
+        Set = nil -- Will be set below
+    }
+
+    local function updateToggle(animate)
+        if animate == nil then
+            animate = true
+        end
+
+        if toggleState then
+            if animate then
+                TweenService
+                    :Create(
+                        toggleButton,
+                        TweenInfo.new(0.2),
+                        { BackgroundColor3 = Color3.fromRGB(138, 43, 226) }
+                    )
+                    :Play()
+                TweenService:Create(
+                    toggleCircle,
+                    TweenInfo.new(0.2),
+                    { Position = UDim2.new(1, -23, 0.5, -10) }
+                ):Play()
+            else
+                toggleButton.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+                toggleCircle.Position = UDim2.new(1, -23, 0.5, -10)
+            end
+        else
+            if animate then
+                TweenService
+                    :Create(
+                        toggleButton,
+                        TweenInfo.new(0.2),
+                        { BackgroundColor3 = Color3.fromRGB(35, 35, 45) }
+                    )
+                    :Play()
+                TweenService:Create(
+                    toggleCircle,
+                    TweenInfo.new(0.2),
+                    { Position = UDim2.new(0, 3, 0.5, -10) }
+                ):Play()
+            else
+                toggleButton.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+                toggleCircle.Position = UDim2.new(0, 3, 0.5, -10)
+            end
+        end
+        
+        -- Update setting value
+        self.Settings[settingId].Value = toggleState
+    end
+
+    updateToggle(false)
+
+    toggleButton.MouseButton1Click:Connect(function()
+        toggleState = not toggleState
+        updateToggle(true)
+        if config.Callback then
+            config.Callback(toggleState)
+        end
+    end)
+
+    table.insert(tab.Elements, toggleFrame)
+    
+    local returnTable = {
+        Set = function(value)
+            toggleState = value
+            updateToggle(true)
+            self.Settings[settingId].Value = value
+        end,
+        Get = function()
+            return toggleState
+        end,
+    }
+    
+    self.Settings[settingId].Set = returnTable.Set
+
+    return returnTable
+end
+
+function RallyUI:CreateSlider(tab, config)
+    local sliderFrame = Instance.new('Frame')
+    sliderFrame.Name = config.Name
+    sliderFrame.Size = UDim2.new(1, 0, 0, 60)
+    sliderFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+    sliderFrame.BorderSizePixel = 0
+    sliderFrame.LayoutOrder = #tab.Elements + 1
+    sliderFrame.Parent = tab.Frame
+
+    local corner = Instance.new('UICorner')
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = sliderFrame
+
+    local stroke = Instance.new('UIStroke')
+    stroke.Color = Color3.fromRGB(138, 43, 226)
+    stroke.Thickness = 1
+    stroke.Transparency = 0.7
+    stroke.Parent = sliderFrame
+
+    local label = Instance.new('TextLabel')
+    label.Name = 'Label'
+    label.Size = UDim2.new(1, -20, 0, 20)
+    label.Position = UDim2.new(0, 12, 0, 8)
+    label.BackgroundTransparency = 1
+    label.Text = config.Name .. ': ' .. tostring(config.CurrentValue)
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 14
+    label.Font = Enum.Font.GothamMedium
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = sliderFrame
+
+    local sliderTrack = Instance.new('Frame')
+    sliderTrack.Name = 'Track'
+    sliderTrack.Size = UDim2.new(1, -24, 0, 6)
+    sliderTrack.Position = UDim2.new(0, 12, 0, 38)
+    sliderTrack.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    sliderTrack.BorderSizePixel = 0
+    sliderTrack.Parent = sliderFrame
+
+    local trackCorner = Instance.new('UICorner')
+    trackCorner.CornerRadius = UDim.new(1, 0)
+    trackCorner.Parent = sliderTrack
+
+    local sliderFill = Instance.new('Frame')
+    sliderFill.Name = 'Fill'
+    sliderFill.Size = UDim2.new(0, 0, 1, 0)
+    sliderFill.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+    sliderFill.BorderSizePixel = 0
+    sliderFill.Parent = sliderTrack
+
+    local fillCorner = Instance.new('UICorner')
+    fillCorner.CornerRadius = UDim.new(1, 0)
+    fillCorner.Parent = sliderFill
+
+    local sliderButton = Instance.new('TextButton')
+    sliderButton.Name = 'Slider'
+    sliderButton.Size = UDim2.new(0, 16, 0, 16)
+    sliderButton.Position = UDim2.new(0, 0, 0.5, -8)
+    sliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    sliderButton.BorderSizePixel = 0
+    sliderButton.Text = ''
+    sliderButton.Parent = sliderTrack
+
+    local sliderCorner = Instance.new('UICorner')
+    sliderCorner.CornerRadius = UDim.new(1, 0)
+    sliderCorner.Parent = sliderButton
+
+    local currentValue = config.CurrentValue or config.Range[1]
+    local range = config.Range[2] - config.Range[1]
+    
+    -- Register setting
+    local settingId = config.Flag or config.Name
+    self.Settings[settingId] = {
+        Type = "Slider",
+        Value = currentValue,
+        Element = sliderFrame,
+        Set = nil -- Will be set below
+    }
+    
+    -- Fix decimal display
+    local function formatValue(value)
+        if config.Increment and config.Increment < 1 then
+            -- Round to 1 decimal place for values like 0.6
+            return math.floor(value * 10 + 0.5) / 10
+        else
+            return math.floor(value + 0.5)
+        end
+    end
+
+    local function updateSlider(value)
+        currentValue = math.clamp(value, config.Range[1], config.Range[2])
+
+        if config.Increment then
+            currentValue = math.floor(currentValue / config.Increment + 0.5)
+                * config.Increment
+        end
+        
+        -- Format the value properly
+        currentValue = formatValue(currentValue)
+
+        local percentage = (currentValue - config.Range[1]) / range
+        sliderButton.Position = UDim2.new(percentage, -8, 0.5, -8)
+        sliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+        label.Text = config.Name
+            .. ': '
+            .. tostring(currentValue)
+            .. (config.Suffix or '')
+
+        -- Update setting value
+        self.Settings[settingId].Value = currentValue
+        
+        if config.Callback then
+            config.Callback(currentValue)
+        end
+    end
+
+    updateSlider(currentValue)
+
+    local dragging = false
+    sliderButton.MouseButton1Down:Connect(function()
+        dragging = true
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    sliderTrack.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            local percentage = math.clamp(
+                (input.Position.X - sliderTrack.AbsolutePosition.X)
+                    / sliderTrack.AbsoluteSize.X,
+                0,
+                1
+            )
+            updateSlider(config.Range[1] + (percentage * range))
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if
+            dragging
+            and input.UserInputType == Enum.UserInputType.MouseMovement
+        then
+            local percentage = math.clamp(
+                (input.Position.X - sliderTrack.AbsolutePosition.X)
+                    / sliderTrack.AbsoluteSize.X,
+                0,
+                1
+            )
+            updateSlider(config.Range[1] + (percentage * range))
+        end
+    end)
+
+    table.insert(tab.Elements, sliderFrame)
+    
+    local returnTable = {
+        Set = function(value)
+            updateSlider(value)
+        end,
+        Get = function()
+            return currentValue
+        end,
+    }
+    
+    self.Settings[settingId].Set = returnTable.Set
+
+    return returnTable
+end
+
+function RallyUI:CreateConfigSection(tab)
+    -- Config Name Input
+    local configInputFrame = Instance.new('Frame')
+    configInputFrame.Name = 'ConfigInput'
+    configInputFrame.Size = UDim2.new(1, 0, 0, 42)
+    configInputFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+    configInputFrame.BorderSizePixel = 0
+    configInputFrame.LayoutOrder = #tab.Elements + 1
+    configInputFrame.Parent = tab.Frame
+
+    local inputCorner = Instance.new('UICorner')
+    inputCorner.CornerRadius = UDim.new(0, 8)
+    inputCorner.Parent = configInputFrame
+
+    local inputStroke = Instance.new('UIStroke')
+    inputStroke.Color = Color3.fromRGB(138, 43, 226)
+    inputStroke.Thickness = 1
+    inputStroke.Transparency = 0.7
+    inputStroke.Parent = configInputFrame
+
+    local configInput = Instance.new('TextBox')
+    configInput.Size = UDim2.new(1, -24, 1, 0)
+    configInput.Position = UDim2.new(0, 12, 0, 0)
+    configInput.BackgroundTransparency = 1
+    configInput.PlaceholderText = 'Config Name...'
+    configInput.Text = ''
+    configInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    configInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 135)
+    configInput.TextSize = 14
+    configInput.Font = Enum.Font.Gotham
+    configInput.TextXAlignment = Enum.TextXAlignment.Left
+    configInput.Parent = configInputFrame
+
+    table.insert(tab.Elements, configInputFrame)
+
+    -- Save Config Button
+    self:CreateButton(tab, {
+        Name = 'Save Config',
+        Callback = function()
+            local configName = configInput.Text
+            if configName and configName ~= '' then
+                local success = self.ConfigManager:SaveConfig(configName, self:GetCurrentSettings())
+                if success then
+                    self:Notify("Config Saved", "Saved as: " .. configName)
+                    configInput.Text = ''
+                else
+                    self:Notify("Error", "Failed to save config")
+                end
+            else
+                self:Notify("Error", "Please enter a config name")
+            end
+        end
+    })
+
+    -- Load Config Button
+    self:CreateButton(tab, {
+        Name = 'Load Config',
+        Callback = function()
+            local configName = configInput.Text
+            if configName and configName ~= '' then
+                local settings = self.ConfigManager:LoadConfig(configName)
+                if settings then
+                    self:ApplySettings(settings)
+                    self:Notify("Config Loaded", "Loaded: " .. configName)
+                    configInput.Text = ''
+                else
+                    self:Notify("Error", "Config not found")
+                end
+            else
+                self:Notify("Error", "Please enter a config name")
+            end
+        end
+    })
+
+    -- Delete Config Button
+    self:CreateButton(tab, {
+        Name = 'Delete Config',
+        Callback = function()
+            local configName = configInput.Text
+            if configName and configName ~= '' then
+                local success = self.ConfigManager:DeleteConfig(configName)
+                if success then
+                    self:Notify("Config Deleted", "Deleted: " .. configName)
+                    configInput.Text = ''
+                else
+                    self:Notify("Error", "Failed to delete config")
+                end
+            else
+                self:Notify("Error", "Please enter a config name")
+            end
+        end
+    })
+
+    -- List Configs Button
+    self:CreateButton(tab, {
+        Name = 'List Configs',
+        Callback = function()
+            local configs = self.ConfigManager:GetConfigs()
+            if #configs > 0 then
+                local configList = table.concat(configs, ", ")
+                self:Notify("Available Configs", configList)
+                print("Available Configs:", configList)
+            else
+                self:Notify("No Configs", "No saved configs found")
+            end
+        end
+    })
+end
+
+function RallyUI:GetCurrentSettings()
+    local settings = {}
+    for id, setting in pairs(self.Settings) do
+        settings[id] = setting.Value
+    end
+    return settings
+end
+
+function RallyUI:ApplySettings(settings)
+    for id, value in pairs(settings) do
+        if self.Settings[id] and self.Settings[id].Set then
+            self.Settings[id].Set(value)
+        end
+    end
+end
+
+function RallyUI:Destroy()
+    if self.ScreenGui then
+        self.ScreenGui:Destroy()
+    end
+end
+
+return RallyUI

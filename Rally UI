@@ -1,8 +1,7 @@
-
 --[[
 ═══════════════════════════════════════════════════════════════════════════════
-    RALLY UI LIBRARY - BLACK & PURPLE THEME
-    Features: Auto-load configs, Create new configs, Clean design
+    VN.DEV UI LIBRARY - Dark Theme with Cyan Accents
+    Reskinned from Rally UI to match VN.DEV v1.7 style
 ═══════════════════════════════════════════════════════════════════════════════
 --]]
 
@@ -12,8 +11,28 @@ local UserInputService = game:GetService('UserInputService')
 local TweenService = game:GetService('TweenService')
 local HttpService = game:GetService('HttpService')
 
-local RallyUI = {}
-RallyUI.__index = RallyUI
+local VNDevUI = {}
+VNDevUI.__index = VNDevUI
+
+-- Theme Colors (VN.DEV Style)
+local Theme = {
+    Background = Color3.fromRGB(18, 18, 21),
+    Sidebar = Color3.fromRGB(24, 24, 28),
+    Header = Color3.fromRGB(24, 24, 28),
+    Element = Color3.fromRGB(32, 32, 38),
+    ElementHover = Color3.fromRGB(40, 40, 48),
+    Input = Color3.fromRGB(45, 45, 52),
+    Accent = Color3.fromRGB(75, 75, 85),
+    AccentHover = Color3.fromRGB(90, 90, 100),
+    Text = Color3.fromRGB(255, 255, 255),
+    TextDim = Color3.fromRGB(140, 140, 150),
+    TextMuted = Color3.fromRGB(100, 100, 110),
+    TabActive = Color3.fromRGB(45, 45, 52),
+    TabInactive = Color3.fromRGB(24, 24, 28),
+    Toggle = Color3.fromRGB(55, 55, 65),
+    ToggleEnabled = Color3.fromRGB(75, 75, 85),
+    Keybind = Color3.fromRGB(50, 50, 58),
+}
 
 -- Config Management
 local ConfigManager = {}
@@ -21,11 +40,10 @@ ConfigManager.__index = ConfigManager
 
 function ConfigManager.new()
     local self = setmetatable({}, ConfigManager)
-    self.configFolder = "RallyConfigs"
+    self.configFolder = "VNDevConfigs"
     self.currentConfig = nil
     self.configs = {}
     
-    -- Ensure config folder exists
     if not isfolder(self.configFolder) then
         makefolder(self.configFolder)
     end
@@ -91,18 +109,18 @@ end
 function ConfigManager:AutoLoad()
     local configs = self:GetConfigs()
     if #configs > 0 then
-        -- Load the first config found
         return self:LoadConfig(configs[1])
     end
     return nil
 end
 
 -- Main UI
-function RallyUI:CreateWindow(config)
+function VNDevUI:CreateWindow(config)
     config = config or {}
-    local self = setmetatable({}, RallyUI)
+    local self = setmetatable({}, VNDevUI)
 
-    self.WindowName = config.Name or 'Rally'
+    self.WindowName = config.Name or 'VN.DEV'
+    self.Version = config.Version or 'v1.7'
     self.Tabs = {}
     self.TabOrder = {}
     self.CurrentTab = nil
@@ -112,7 +130,6 @@ function RallyUI:CreateWindow(config)
     self:CreateMainUI()
     self:BindToggleKey()
     
-    -- Auto-load config on startup
     task.spawn(function()
         task.wait(0.5)
         local loadedSettings = self.ConfigManager:AutoLoad()
@@ -125,173 +142,171 @@ function RallyUI:CreateWindow(config)
     return self
 end
 
-function RallyUI:CreateMainUI()
+function VNDevUI:CreateMainUI()
     self.ScreenGui = Instance.new('ScreenGui')
-    self.ScreenGui.Name = 'RallyUI'
+    self.ScreenGui.Name = 'VNDevUI'
     self.ScreenGui.ResetOnSpawn = false
     self.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     self.ScreenGui.Parent = Players.LocalPlayer:WaitForChild('PlayerGui')
 
+    -- Main Container
     self.MainFrame = Instance.new('Frame')
     self.MainFrame.Name = 'MainFrame'
-    self.MainFrame.Size = UDim2.new(0, 550, 0, 450)
-    self.MainFrame.Position = UDim2.new(0.5, -275, 0.5, -225)
-    self.MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    self.MainFrame.Size = UDim2.new(0, 750, 0, 500)
+    self.MainFrame.Position = UDim2.new(0.5, -375, 0.5, -250)
+    self.MainFrame.BackgroundColor3 = Theme.Background
     self.MainFrame.BorderSizePixel = 0
     self.MainFrame.ClipsDescendants = true
     self.MainFrame.Parent = self.ScreenGui
 
-    local corner = Instance.new('UICorner')
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = self.MainFrame
+    local mainCorner = Instance.new('UICorner')
+    mainCorner.CornerRadius = UDim.new(0, 8)
+    mainCorner.Parent = self.MainFrame
 
-    local stroke = Instance.new('UIStroke')
-    stroke.Color = Color3.fromRGB(138, 43, 226) -- Purple
-    stroke.Thickness = 2
-    stroke.Transparency = 0
-    stroke.Parent = self.MainFrame
+    -- Header Bar
+    self.HeaderBar = Instance.new('Frame')
+    self.HeaderBar.Name = 'HeaderBar'
+    self.HeaderBar.Size = UDim2.new(1, 0, 0, 50)
+    self.HeaderBar.BackgroundColor3 = Theme.Header
+    self.HeaderBar.BorderSizePixel = 0
+    self.HeaderBar.Parent = self.MainFrame
 
-    self.TitleBar = Instance.new('Frame')
-    self.TitleBar.Name = 'TitleBar'
-    self.TitleBar.Size = UDim2.new(1, 0, 0, 45)
-    self.TitleBar.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
-    self.TitleBar.BorderSizePixel = 0
-    self.TitleBar.Parent = self.MainFrame
+    local headerCorner = Instance.new('UICorner')
+    headerCorner.CornerRadius = UDim.new(0, 8)
+    headerCorner.Parent = self.HeaderBar
 
-    local titleCorner = Instance.new('UICorner')
-    titleCorner.CornerRadius = UDim.new(0, 12)
-    titleCorner.Parent = self.TitleBar
+    -- Fix bottom corners of header
+    local headerFix = Instance.new('Frame')
+    headerFix.Size = UDim2.new(1, 0, 0, 10)
+    headerFix.Position = UDim2.new(0, 0, 1, -10)
+    headerFix.BackgroundColor3 = Theme.Header
+    headerFix.BorderSizePixel = 0
+    headerFix.Parent = self.HeaderBar
 
-    local titleBottom = Instance.new('Frame')
-    titleBottom.Size = UDim2.new(1, 0, 0, 12)
-    titleBottom.Position = UDim2.new(0, 0, 1, -12)
-    titleBottom.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
-    titleBottom.BorderSizePixel = 0
-    titleBottom.Parent = self.TitleBar
+    -- Logo Icon (square placeholder)
+    local logoIcon = Instance.new('Frame')
+    logoIcon.Name = 'LogoIcon'
+    logoIcon.Size = UDim2.new(0, 20, 0, 20)
+    logoIcon.Position = UDim2.new(0.5, -70, 0.5, -10)
+    logoIcon.BackgroundColor3 = Theme.Accent
+    logoIcon.BorderSizePixel = 0
+    logoIcon.Parent = self.HeaderBar
 
-    local accentLine = Instance.new('Frame')
-    accentLine.Size = UDim2.new(1, 0, 0, 2)
-    accentLine.Position = UDim2.new(0, 0, 1, 0)
-    accentLine.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
-    accentLine.BorderSizePixel = 0
-    accentLine.Parent = self.TitleBar
+    local logoCorner = Instance.new('UICorner')
+    logoCorner.CornerRadius = UDim.new(0, 4)
+    logoCorner.Parent = logoIcon
 
+    -- Title Text
     local titleText = Instance.new('TextLabel')
     titleText.Name = 'Title'
-    titleText.Size = UDim2.new(1, -80, 1, 0)
-    titleText.Position = UDim2.new(0, 15, 0, 0)
+    titleText.Size = UDim2.new(0, 100, 0, 20)
+    titleText.Position = UDim2.new(0.5, -40, 0.5, -10)
     titleText.BackgroundTransparency = 1
     titleText.Text = self.WindowName
-    titleText.TextColor3 = Color3.fromRGB(138, 43, 226)
-    titleText.TextSize = 18
+    titleText.TextColor3 = Theme.Text
+    titleText.TextSize = 16
     titleText.Font = Enum.Font.GothamBold
-    titleText.TextXAlignment = Enum.TextXAlignment.Left
-    titleText.Parent = self.TitleBar
+    titleText.Parent = self.HeaderBar
 
-    local minimizeButton = Instance.new('TextButton')
-    minimizeButton.Name = 'MinimizeButton'
-    minimizeButton.Size = UDim2.new(0, 35, 0, 35)
-    minimizeButton.Position = UDim2.new(1, -75, 0.5, -17.5)
-    minimizeButton.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
-    minimizeButton.BorderSizePixel = 0
-    minimizeButton.Text = '—'
-    minimizeButton.TextColor3 = Color3.fromRGB(200, 200, 210)
-    minimizeButton.TextSize = 16
-    minimizeButton.Font = Enum.Font.GothamBold
-    minimizeButton.Parent = self.TitleBar
+    -- Version Badge
+    local versionBadge = Instance.new('Frame')
+    versionBadge.Name = 'VersionBadge'
+    versionBadge.Size = UDim2.new(0, 36, 0, 18)
+    versionBadge.Position = UDim2.new(0.5, 45, 0.5, -9)
+    versionBadge.BackgroundColor3 = Theme.Element
+    versionBadge.BorderSizePixel = 0
+    versionBadge.Parent = self.HeaderBar
 
-    local minCorner = Instance.new('UICorner')
-    minCorner.CornerRadius = UDim.new(0, 6)
-    minCorner.Parent = minimizeButton
+    local versionCorner = Instance.new('UICorner')
+    versionCorner.CornerRadius = UDim.new(0, 9)
+    versionCorner.Parent = versionBadge
 
-    local closeButton = Instance.new('TextButton')
-    closeButton.Name = 'CloseButton'
-    closeButton.Size = UDim2.new(0, 35, 0, 35)
-    closeButton.Position = UDim2.new(1, -35, 0.5, -17.5)
-    closeButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-    closeButton.BorderSizePixel = 0
-    closeButton.Text = 'X' -- Changed from ✕ to X
-    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeButton.TextSize = 18
-    closeButton.Font = Enum.Font.GothamBold
-    closeButton.Parent = self.TitleBar
+    local versionText = Instance.new('TextLabel')
+    versionText.Size = UDim2.new(1, 0, 1, 0)
+    versionText.BackgroundTransparency = 1
+    versionText.Text = self.Version
+    versionText.TextColor3 = Theme.TextDim
+    versionText.TextSize = 11
+    versionText.Font = Enum.Font.Gotham
+    versionText.Parent = versionBadge
 
-    local closeCorner = Instance.new('UICorner')
-    closeCorner.CornerRadius = UDim.new(0, 6)
-    closeCorner.Parent = closeButton
+    -- Theme Toggle Button (moon icon placeholder)
+    local themeButton = Instance.new('TextButton')
+    themeButton.Name = 'ThemeButton'
+    themeButton.Size = UDim2.new(0, 36, 0, 36)
+    themeButton.Position = UDim2.new(1, -50, 0.5, -18)
+    themeButton.BackgroundColor3 = Theme.Element
+    themeButton.BorderSizePixel = 0
+    themeButton.Text = 'C'
+    themeButton.TextColor3 = Theme.TextDim
+    themeButton.TextSize = 14
+    themeButton.Font = Enum.Font.Gotham
+    themeButton.AutoButtonColor = false
+    themeButton.Parent = self.HeaderBar
 
+    local themeCorner = Instance.new('UICorner')
+    themeCorner.CornerRadius = UDim.new(0, 8)
+    themeCorner.Parent = themeButton
+
+    themeButton.MouseEnter:Connect(function()
+        TweenService:Create(themeButton, TweenInfo.new(0.2), {BackgroundColor3 = Theme.ElementHover}):Play()
+    end)
+    themeButton.MouseLeave:Connect(function()
+        TweenService:Create(themeButton, TweenInfo.new(0.2), {BackgroundColor3 = Theme.Element}):Play()
+    end)
+
+    -- Sidebar
+    self.Sidebar = Instance.new('Frame')
+    self.Sidebar.Name = 'Sidebar'
+    self.Sidebar.Size = UDim2.new(0, 180, 1, -50)
+    self.Sidebar.Position = UDim2.new(0, 0, 0, 50)
+    self.Sidebar.BackgroundColor3 = Theme.Sidebar
+    self.Sidebar.BorderSizePixel = 0
+    self.Sidebar.Parent = self.MainFrame
+
+    -- Navigation Label
+    local navLabel = Instance.new('TextLabel')
+    navLabel.Name = 'NavigationLabel'
+    navLabel.Size = UDim2.new(1, -30, 0, 20)
+    navLabel.Position = UDim2.new(0, 15, 0, 15)
+    navLabel.BackgroundTransparency = 1
+    navLabel.Text = 'NAVIGATION'
+    navLabel.TextColor3 = Theme.TextMuted
+    navLabel.TextSize = 10
+    navLabel.Font = Enum.Font.GothamBold
+    navLabel.TextXAlignment = Enum.TextXAlignment.Left
+    navLabel.Parent = self.Sidebar
+
+    -- Tab Container
     self.TabContainer = Instance.new('ScrollingFrame')
     self.TabContainer.Name = 'TabContainer'
-    self.TabContainer.Size = UDim2.new(0, 140, 1, -45)
-    self.TabContainer.Position = UDim2.new(0, 0, 0, 45)
-    self.TabContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+    self.TabContainer.Size = UDim2.new(1, -20, 1, -50)
+    self.TabContainer.Position = UDim2.new(0, 10, 0, 40)
+    self.TabContainer.BackgroundTransparency = 1
     self.TabContainer.BorderSizePixel = 0
-    self.TabContainer.ScrollBarThickness = 4
-    self.TabContainer.ScrollBarImageColor3 = Color3.fromRGB(138, 43, 226)
-    self.TabContainer.Parent = self.MainFrame
+    self.TabContainer.ScrollBarThickness = 3
+    self.TabContainer.ScrollBarImageColor3 = Theme.Accent
+    self.TabContainer.Parent = self.Sidebar
 
     local tabLayout = Instance.new('UIListLayout')
-    tabLayout.Padding = UDim.new(0, 8)
+    tabLayout.Padding = UDim.new(0, 4)
     tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
     tabLayout.Parent = self.TabContainer
 
-    local tabPadding = Instance.new('UIPadding')
-    tabPadding.PaddingTop = UDim.new(0, 10)
-    tabPadding.PaddingLeft = UDim.new(0, 10)
-    tabPadding.PaddingRight = UDim.new(0, 10)
-    tabPadding.Parent = self.TabContainer
-
+    -- Content Area
     self.ContentContainer = Instance.new('Frame')
     self.ContentContainer.Name = 'ContentContainer'
-    self.ContentContainer.Size = UDim2.new(1, -140, 1, -45)
-    self.ContentContainer.Position = UDim2.new(0, 140, 0, 45)
-    self.ContentContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    self.ContentContainer.Size = UDim2.new(1, -180, 1, -50)
+    self.ContentContainer.Position = UDim2.new(0, 180, 0, 50)
+    self.ContentContainer.BackgroundColor3 = Theme.Background
     self.ContentContainer.BorderSizePixel = 0
     self.ContentContainer.ClipsDescendants = true
     self.ContentContainer.Parent = self.MainFrame
 
-    self:MakeDraggable(self.TitleBar)
-
-    minimizeButton.MouseEnter:Connect(function()
-        TweenService:Create(
-            minimizeButton,
-            TweenInfo.new(0.2),
-            { BackgroundColor3 = Color3.fromRGB(138, 43, 226) }
-        ):Play()
-    end)
-    minimizeButton.MouseLeave:Connect(function()
-        TweenService:Create(
-            minimizeButton,
-            TweenInfo.new(0.2),
-            { BackgroundColor3 = Color3.fromRGB(30, 30, 38) }
-        ):Play()
-    end)
-
-    closeButton.MouseEnter:Connect(function()
-        TweenService:Create(
-            closeButton,
-            TweenInfo.new(0.2),
-            { BackgroundColor3 = Color3.fromRGB(180, 40, 40) }
-        ):Play()
-    end)
-    closeButton.MouseLeave:Connect(function()
-        TweenService:Create(
-            closeButton,
-            TweenInfo.new(0.2),
-            { BackgroundColor3 = Color3.fromRGB(220, 50, 50) }
-        ):Play()
-    end)
-
-    closeButton.MouseButton1Click:Connect(function()
-        self:ToggleUI()
-    end)
-
-    minimizeButton.MouseButton1Click:Connect(function()
-        self:ToggleUI()
-    end)
+    self:MakeDraggable(self.HeaderBar)
 end
 
-function RallyUI:MakeDraggable(frame)
+function VNDevUI:MakeDraggable(frame)
     local dragging = false
     local dragInput, mousePos, framePos
 
@@ -328,41 +343,52 @@ function RallyUI:MakeDraggable(frame)
     end)
 end
 
-function RallyUI:BindToggleKey()
+function VNDevUI:BindToggleKey()
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then
-            return
-        end
+        if gameProcessed then return end
         if input.KeyCode == Enum.KeyCode.K then
             self:ToggleUI()
         end
     end)
 end
 
-function RallyUI:ToggleUI()
+function VNDevUI:ToggleUI()
     self.MainFrame.Visible = not self.MainFrame.Visible
 end
 
-function RallyUI:Notify(title, text)
+function VNDevUI:Notify(title, text)
     pcall(function()
         game.StarterGui:SetCore("SendNotification", {
-            Title = title;
-            Text = text;
-            Duration = 3;
+            Title = title,
+            Text = text,
+            Duration = 3,
         })
     end)
 end
 
-function RallyUI:CreateTab(tabName)
+-- Tab Icons (simple text representations)
+local TabIcons = {
+    Config = "O",
+    AHK = "[]",
+    Testing = "+",
+    About = "()",
+    Settings = "O",
+    Main = "[]",
+    Aimbot = "+",
+    Visuals = "()",
+}
+
+function VNDevUI:CreateTab(tabName, icon)
     local tab = {
         Name = tabName,
         Elements = {},
+        Sections = {},
     }
 
     local tabButton = Instance.new('TextButton')
     tabButton.Name = tabName
-    tabButton.Size = UDim2.new(1, 0, 0, 40)
-    tabButton.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+    tabButton.Size = UDim2.new(1, 0, 0, 38)
+    tabButton.BackgroundColor3 = Theme.TabInactive
     tabButton.BorderSizePixel = 0
     tabButton.AutoButtonColor = false
     tabButton.Text = ''
@@ -370,69 +396,79 @@ function RallyUI:CreateTab(tabName)
     tabButton.Parent = self.TabContainer
 
     local tabCorner = Instance.new('UICorner')
-    tabCorner.CornerRadius = UDim.new(0, 8)
+    tabCorner.CornerRadius = UDim.new(0, 6)
     tabCorner.Parent = tabButton
 
+    -- Left accent bar (shown when active)
+    local accentBar = Instance.new('Frame')
+    accentBar.Name = 'AccentBar'
+    accentBar.Size = UDim2.new(0, 3, 0.6, 0)
+    accentBar.Position = UDim2.new(0, 0, 0.2, 0)
+    accentBar.BackgroundColor3 = Theme.Text
+    accentBar.BorderSizePixel = 0
+    accentBar.Visible = false
+    accentBar.Parent = tabButton
+
+    local accentCorner = Instance.new('UICorner')
+    accentCorner.CornerRadius = UDim.new(0, 2)
+    accentCorner.Parent = accentBar
+
+    -- Icon
     local tabIcon = Instance.new('TextLabel')
-    tabIcon.Size = UDim2.new(0, 25, 1, 0)
-    tabIcon.Position = UDim2.new(0, 8, 0, 0)
+    tabIcon.Name = 'Icon'
+    tabIcon.Size = UDim2.new(0, 24, 0, 24)
+    tabIcon.Position = UDim2.new(0, 12, 0.5, -12)
     tabIcon.BackgroundTransparency = 1
-    tabIcon.Text = '●'
-    tabIcon.TextColor3 = Color3.fromRGB(138, 43, 226)
-    tabIcon.TextSize = 18
+    tabIcon.Text = icon or TabIcons[tabName] or "O"
+    tabIcon.TextColor3 = Theme.TextDim
+    tabIcon.TextSize = 14
     tabIcon.Font = Enum.Font.GothamBold
     tabIcon.Parent = tabButton
 
+    -- Tab Name
     local tabText = Instance.new('TextLabel')
-    tabText.Size = UDim2.new(1, -35, 1, 0)
-    tabText.Position = UDim2.new(0, 35, 0, 0)
+    tabText.Name = 'TabName'
+    tabText.Size = UDim2.new(1, -50, 1, 0)
+    tabText.Position = UDim2.new(0, 42, 0, 0)
     tabText.BackgroundTransparency = 1
     tabText.Text = tabName
-    tabText.TextColor3 = Color3.fromRGB(150, 150, 165)
-    tabText.TextSize = 14
-    tabText.Font = Enum.Font.GothamMedium
+    tabText.TextColor3 = Theme.TextDim
+    tabText.TextSize = 13
+    tabText.Font = Enum.Font.Gotham
     tabText.TextXAlignment = Enum.TextXAlignment.Left
     tabText.Parent = tabButton
 
+    -- Content Frame
     local tabFrame = Instance.new('ScrollingFrame')
     tabFrame.Name = tabName
-    tabFrame.Size = UDim2.new(1, -20, 1, -20)
-    tabFrame.Position = UDim2.new(0, 10, 0, 10)
+    tabFrame.Size = UDim2.new(1, -30, 1, -30)
+    tabFrame.Position = UDim2.new(0, 15, 0, 15)
     tabFrame.BackgroundTransparency = 1
     tabFrame.BorderSizePixel = 0
-    tabFrame.ScrollBarThickness = 6
-    tabFrame.ScrollBarImageColor3 = Color3.fromRGB(138, 43, 226)
+    tabFrame.ScrollBarThickness = 4
+    tabFrame.ScrollBarImageColor3 = Theme.Accent
     tabFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
     tabFrame.Visible = false
     tabFrame.Parent = self.ContentContainer
 
     local layout = Instance.new('UIListLayout')
-    layout.Padding = UDim.new(0, 8)
+    layout.Padding = UDim.new(0, 12)
     layout.SortOrder = Enum.SortOrder.LayoutOrder
     layout.Parent = tabFrame
 
     layout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
-        tabFrame.CanvasSize =
-            UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
+        tabFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 20)
     end)
 
     tabButton.MouseEnter:Connect(function()
         if self.CurrentTab ~= tabName then
-            TweenService:Create(
-                tabButton,
-                TweenInfo.new(0.2),
-                { BackgroundColor3 = Color3.fromRGB(25, 25, 33) }
-            ):Play()
+            TweenService:Create(tabButton, TweenInfo.new(0.15), {BackgroundColor3 = Theme.ElementHover}):Play()
         end
     end)
 
     tabButton.MouseLeave:Connect(function()
         if self.CurrentTab ~= tabName then
-            TweenService:Create(
-                tabButton,
-                TweenInfo.new(0.2),
-                { BackgroundColor3 = Color3.fromRGB(30, 30, 38) }
-            ):Play()
+            TweenService:Create(tabButton, TweenInfo.new(0.15), {BackgroundColor3 = Theme.TabInactive}):Play()
         end
     end)
 
@@ -444,11 +480,12 @@ function RallyUI:CreateTab(tabName)
     tab.Frame = tabFrame
     tab.Icon = tabIcon
     tab.Text = tabText
+    tab.AccentBar = accentBar
     tab.Layout = layout
     self.Tabs[tabName] = tab
     table.insert(self.TabOrder, tabName)
 
-    self.TabContainer.CanvasSize = UDim2.new(0, 0, 0, #self.TabOrder * 48 + 20)
+    self.TabContainer.CanvasSize = UDim2.new(0, 0, 0, #self.TabOrder * 42 + 10)
 
     if not self.CurrentTab then
         self:SwitchTab(tabName)
@@ -457,107 +494,118 @@ function RallyUI:CreateTab(tabName)
     return tab
 end
 
-function RallyUI:SwitchTab(tabName)
+function VNDevUI:SwitchTab(tabName)
     for name, tab in pairs(self.Tabs) do
         tab.Frame.Visible = false
-        TweenService:Create(
-            tab.Button,
-            TweenInfo.new(0.2),
-            { BackgroundColor3 = Color3.fromRGB(30, 30, 38) }
-        ):Play()
-        TweenService:Create(
-            tab.Text,
-            TweenInfo.new(0.2),
-            { TextColor3 = Color3.fromRGB(150, 150, 165) }
-        ):Play()
-        TweenService:Create(
-            tab.Icon,
-            TweenInfo.new(0.2),
-            { TextColor3 = Color3.fromRGB(138, 43, 226) }
-        ):Play()
+        tab.AccentBar.Visible = false
+        TweenService:Create(tab.Button, TweenInfo.new(0.15), {BackgroundColor3 = Theme.TabInactive}):Play()
+        TweenService:Create(tab.Text, TweenInfo.new(0.15), {TextColor3 = Theme.TextDim}):Play()
+        TweenService:Create(tab.Icon, TweenInfo.new(0.15), {TextColor3 = Theme.TextDim}):Play()
     end
 
     if self.Tabs[tabName] then
         self.Tabs[tabName].Frame.Visible = true
-        TweenService:Create(
-            self.Tabs[tabName].Button,
-            TweenInfo.new(0.2),
-            { BackgroundColor3 = Color3.fromRGB(138, 43, 226) }
-        ):Play()
-        TweenService:Create(
-            self.Tabs[tabName].Text,
-            TweenInfo.new(0.2),
-            { TextColor3 = Color3.fromRGB(255, 255, 255) }
-        ):Play()
-        TweenService:Create(
-            self.Tabs[tabName].Icon,
-            TweenInfo.new(0.2),
-            { TextColor3 = Color3.fromRGB(255, 255, 255) }
-        ):Play()
+        self.Tabs[tabName].AccentBar.Visible = true
+        TweenService:Create(self.Tabs[tabName].Button, TweenInfo.new(0.15), {BackgroundColor3 = Theme.TabActive}):Play()
+        TweenService:Create(self.Tabs[tabName].Text, TweenInfo.new(0.15), {TextColor3 = Theme.Text}):Play()
+        TweenService:Create(self.Tabs[tabName].Icon, TweenInfo.new(0.15), {TextColor3 = Theme.Text}):Play()
         self.CurrentTab = tabName
     end
 end
 
-function RallyUI:CreateButton(tab, config)
-    local button = Instance.new('TextButton')
-    button.Name = config.Name
-    button.Size = UDim2.new(1, 0, 0, 42)
-    button.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
-    button.BorderSizePixel = 0
-    button.AutoButtonColor = false
-    button.Text = config.Name
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.TextSize = 14
-    button.Font = Enum.Font.GothamMedium
-    button.LayoutOrder = #tab.Elements + 1
-    button.Parent = tab.Frame
+-- Create a Section Header (like "General Settings" in the screenshot)
+function VNDevUI:CreateSection(tab, sectionName)
+    local sectionFrame = Instance.new('Frame')
+    sectionFrame.Name = sectionName
+    sectionFrame.Size = UDim2.new(1, 0, 0, 40)
+    sectionFrame.BackgroundColor3 = Theme.Element
+    sectionFrame.BorderSizePixel = 0
+    sectionFrame.LayoutOrder = #tab.Elements + 1
+    sectionFrame.Parent = tab.Frame
 
-    local corner = Instance.new('UICorner')
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = button
+    local sectionCorner = Instance.new('UICorner')
+    sectionCorner.CornerRadius = UDim.new(0, 8)
+    sectionCorner.Parent = sectionFrame
 
-    local stroke = Instance.new('UIStroke')
-    stroke.Color = Color3.fromRGB(138, 43, 226)
-    stroke.Thickness = 1
-    stroke.Transparency = 0.7
-    stroke.Parent = button
+    -- Settings Icon
+    local iconFrame = Instance.new('Frame')
+    iconFrame.Size = UDim2.new(0, 28, 0, 28)
+    iconFrame.Position = UDim2.new(0, 10, 0.5, -14)
+    iconFrame.BackgroundColor3 = Theme.Accent
+    iconFrame.BorderSizePixel = 0
+    iconFrame.Parent = sectionFrame
 
-    button.MouseEnter:Connect(function()
-        TweenService:Create(
-            button,
-            TweenInfo.new(0.2),
-            { BackgroundColor3 = Color3.fromRGB(138, 43, 226) }
-        ):Play()
-        TweenService:Create(stroke, TweenInfo.new(0.2), { Transparency = 0 })
-            :Play()
-    end)
+    local iconCorner = Instance.new('UICorner')
+    iconCorner.CornerRadius = UDim.new(0, 6)
+    iconCorner.Parent = iconFrame
 
-    button.MouseLeave:Connect(function()
-        TweenService:Create(
-            button,
-            TweenInfo.new(0.2),
-            { BackgroundColor3 = Color3.fromRGB(25, 25, 32) }
-        ):Play()
-        TweenService:Create(stroke, TweenInfo.new(0.2), { Transparency = 0.7 })
-            :Play()
-    end)
+    local iconText = Instance.new('TextLabel')
+    iconText.Size = UDim2.new(1, 0, 1, 0)
+    iconText.BackgroundTransparency = 1
+    iconText.Text = 'O'
+    iconText.TextColor3 = Theme.TextDim
+    iconText.TextSize = 14
+    iconText.Font = Enum.Font.GothamBold
+    iconText.Parent = iconFrame
 
-    button.MouseButton1Click:Connect(function()
-        if config.Callback then
-            config.Callback()
-        end
-    end)
+    -- Section Title
+    local sectionTitle = Instance.new('TextLabel')
+    sectionTitle.Size = UDim2.new(1, -60, 1, 0)
+    sectionTitle.Position = UDim2.new(0, 48, 0, 0)
+    sectionTitle.BackgroundTransparency = 1
+    sectionTitle.Text = sectionName
+    sectionTitle.TextColor3 = Theme.Text
+    sectionTitle.TextSize = 14
+    sectionTitle.Font = Enum.Font.GothamMedium
+    sectionTitle.TextXAlignment = Enum.TextXAlignment.Left
+    sectionTitle.Parent = sectionFrame
 
-    table.insert(tab.Elements, button)
-
-    return button
+    table.insert(tab.Elements, sectionFrame)
+    return sectionFrame
 end
 
-function RallyUI:CreateToggle(tab, config)
+-- Create a Title Header (like "Configuration" with subtitle)
+function VNDevUI:CreateHeader(tab, title, subtitle)
+    local headerFrame = Instance.new('Frame')
+    headerFrame.Name = 'Header'
+    headerFrame.Size = UDim2.new(1, 0, 0, 50)
+    headerFrame.BackgroundTransparency = 1
+    headerFrame.LayoutOrder = #tab.Elements + 1
+    headerFrame.Parent = tab.Frame
+
+    local titleLabel = Instance.new('TextLabel')
+    titleLabel.Size = UDim2.new(1, 0, 0, 24)
+    titleLabel.Position = UDim2.new(0, 0, 0, 0)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = title
+    titleLabel.TextColor3 = Theme.Text
+    titleLabel.TextSize = 20
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.Parent = headerFrame
+
+    if subtitle then
+        local subtitleLabel = Instance.new('TextLabel')
+        subtitleLabel.Size = UDim2.new(1, 0, 0, 16)
+        subtitleLabel.Position = UDim2.new(0, 0, 0, 26)
+        subtitleLabel.BackgroundTransparency = 1
+        subtitleLabel.Text = subtitle
+        subtitleLabel.TextColor3 = Theme.TextMuted
+        subtitleLabel.TextSize = 12
+        subtitleLabel.Font = Enum.Font.Gotham
+        subtitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        subtitleLabel.Parent = headerFrame
+    end
+
+    table.insert(tab.Elements, headerFrame)
+    return headerFrame
+end
+
+function VNDevUI:CreateToggle(tab, config)
     local toggleFrame = Instance.new('Frame')
     toggleFrame.Name = config.Name
-    toggleFrame.Size = UDim2.new(1, 0, 0, 42)
-    toggleFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+    toggleFrame.Size = UDim2.new(1, 0, 0, 50)
+    toggleFrame.BackgroundColor3 = Theme.Element
     toggleFrame.BorderSizePixel = 0
     toggleFrame.LayoutOrder = #tab.Elements + 1
     toggleFrame.Parent = tab.Frame
@@ -566,29 +614,36 @@ function RallyUI:CreateToggle(tab, config)
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = toggleFrame
 
-    local stroke = Instance.new('UIStroke')
-    stroke.Color = Color3.fromRGB(138, 43, 226)
-    stroke.Thickness = 1
-    stroke.Transparency = 0.7
-    stroke.Parent = toggleFrame
+    -- Left accent bar
+    local leftBar = Instance.new('Frame')
+    leftBar.Size = UDim2.new(0, 3, 0.5, 0)
+    leftBar.Position = UDim2.new(0, 0, 0.25, 0)
+    leftBar.BackgroundColor3 = Theme.Accent
+    leftBar.BorderSizePixel = 0
+    leftBar.Parent = toggleFrame
+
+    local barCorner = Instance.new('UICorner')
+    barCorner.CornerRadius = UDim.new(0, 2)
+    barCorner.Parent = leftBar
 
     local label = Instance.new('TextLabel')
     label.Name = 'Label'
-    label.Size = UDim2.new(0.65, -15, 1, 0)
-    label.Position = UDim2.new(0, 12, 0, 0)
+    label.Size = UDim2.new(0.7, -20, 1, 0)
+    label.Position = UDim2.new(0, 18, 0, 0)
     label.BackgroundTransparency = 1
     label.Text = config.Name
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.TextSize = 14
-    label.Font = Enum.Font.GothamMedium
+    label.TextColor3 = Theme.Text
+    label.TextSize = 13
+    label.Font = Enum.Font.Gotham
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = toggleFrame
 
+    -- Toggle Switch
     local toggleButton = Instance.new('TextButton')
     toggleButton.Name = 'Toggle'
-    toggleButton.Size = UDim2.new(0, 50, 0, 26)
-    toggleButton.Position = UDim2.new(1, -62, 0.5, -13)
-    toggleButton.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    toggleButton.Size = UDim2.new(0, 44, 0, 24)
+    toggleButton.Position = UDim2.new(1, -58, 0.5, -12)
+    toggleButton.BackgroundColor3 = Theme.Toggle
     toggleButton.BorderSizePixel = 0
     toggleButton.Text = ''
     toggleButton.AutoButtonColor = false
@@ -599,9 +654,9 @@ function RallyUI:CreateToggle(tab, config)
     toggleCorner.Parent = toggleButton
 
     local toggleCircle = Instance.new('Frame')
-    toggleCircle.Size = UDim2.new(0, 20, 0, 20)
-    toggleCircle.Position = UDim2.new(0, 3, 0.5, -10)
-    toggleCircle.BackgroundColor3 = Color3.fromRGB(200, 200, 210)
+    toggleCircle.Size = UDim2.new(0, 18, 0, 18)
+    toggleCircle.Position = UDim2.new(0, 3, 0.5, -9)
+    toggleCircle.BackgroundColor3 = Theme.TextDim
     toggleCircle.BorderSizePixel = 0
     toggleCircle.Parent = toggleButton
 
@@ -610,60 +665,39 @@ function RallyUI:CreateToggle(tab, config)
     circleCorner.Parent = toggleCircle
 
     local toggleState = config.CurrentValue or false
-    
-    -- Register setting
     local settingId = config.Flag or config.Name
+    
     self.Settings[settingId] = {
         Type = "Toggle",
         Value = toggleState,
         Element = toggleFrame,
-        Set = nil -- Will be set below
+        Set = nil
     }
 
     local function updateToggle(animate)
-        if animate == nil then
-            animate = true
-        end
+        if animate == nil then animate = true end
+        local info = TweenInfo.new(0.2)
 
         if toggleState then
             if animate then
-                TweenService
-                    :Create(
-                        toggleButton,
-                        TweenInfo.new(0.2),
-                        { BackgroundColor3 = Color3.fromRGB(138, 43, 226) }
-                    )
-                    :Play()
-                TweenService:Create(
-                    toggleCircle,
-                    TweenInfo.new(0.2),
-                    { Position = UDim2.new(1, -23, 0.5, -10) }
-                ):Play()
+                TweenService:Create(toggleButton, info, {BackgroundColor3 = Theme.ToggleEnabled}):Play()
+                TweenService:Create(toggleCircle, info, {Position = UDim2.new(1, -21, 0.5, -9), BackgroundColor3 = Theme.Text}):Play()
             else
-                toggleButton.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
-                toggleCircle.Position = UDim2.new(1, -23, 0.5, -10)
+                toggleButton.BackgroundColor3 = Theme.ToggleEnabled
+                toggleCircle.Position = UDim2.new(1, -21, 0.5, -9)
+                toggleCircle.BackgroundColor3 = Theme.Text
             end
         else
             if animate then
-                TweenService
-                    :Create(
-                        toggleButton,
-                        TweenInfo.new(0.2),
-                        { BackgroundColor3 = Color3.fromRGB(35, 35, 45) }
-                    )
-                    :Play()
-                TweenService:Create(
-                    toggleCircle,
-                    TweenInfo.new(0.2),
-                    { Position = UDim2.new(0, 3, 0.5, -10) }
-                ):Play()
+                TweenService:Create(toggleButton, info, {BackgroundColor3 = Theme.Toggle}):Play()
+                TweenService:Create(toggleCircle, info, {Position = UDim2.new(0, 3, 0.5, -9), BackgroundColor3 = Theme.TextDim}):Play()
             else
-                toggleButton.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-                toggleCircle.Position = UDim2.new(0, 3, 0.5, -10)
+                toggleButton.BackgroundColor3 = Theme.Toggle
+                toggleCircle.Position = UDim2.new(0, 3, 0.5, -9)
+                toggleCircle.BackgroundColor3 = Theme.TextDim
             end
         end
         
-        -- Update setting value
         self.Settings[settingId].Value = toggleState
     end
 
@@ -691,15 +725,120 @@ function RallyUI:CreateToggle(tab, config)
     }
     
     self.Settings[settingId].Set = returnTable.Set
-
     return returnTable
 end
 
-function RallyUI:CreateSlider(tab, config)
+function VNDevUI:CreateKeybind(tab, config)
+    local keybindFrame = Instance.new('Frame')
+    keybindFrame.Name = config.Name
+    keybindFrame.Size = UDim2.new(1, 0, 0, 50)
+    keybindFrame.BackgroundColor3 = Theme.Element
+    keybindFrame.BorderSizePixel = 0
+    keybindFrame.LayoutOrder = #tab.Elements + 1
+    keybindFrame.Parent = tab.Frame
+
+    local corner = Instance.new('UICorner')
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = keybindFrame
+
+    -- Label section
+    local labelSection = Instance.new('Frame')
+    labelSection.Size = UDim2.new(0.5, 0, 1, 0)
+    labelSection.BackgroundTransparency = 1
+    labelSection.Parent = keybindFrame
+
+    local labelTitle = Instance.new('TextLabel')
+    labelTitle.Size = UDim2.new(1, -20, 0, 14)
+    labelTitle.Position = UDim2.new(0, 15, 0, 10)
+    labelTitle.BackgroundTransparency = 1
+    labelTitle.Text = config.Label or 'ACTIVATION KEYBIND'
+    labelTitle.TextColor3 = Theme.TextMuted
+    labelTitle.TextSize = 10
+    labelTitle.Font = Enum.Font.GothamBold
+    labelTitle.TextXAlignment = Enum.TextXAlignment.Left
+    labelTitle.Parent = labelSection
+
+    -- Keybind button
+    local keybindButton = Instance.new('TextButton')
+    keybindButton.Size = UDim2.new(0, 60, 0, 28)
+    keybindButton.Position = UDim2.new(0, 15, 0, 26)
+    keybindButton.BackgroundColor3 = Theme.Keybind
+    keybindButton.BorderSizePixel = 0
+    keybindButton.Text = config.CurrentValue and config.CurrentValue.Name or 'NONE'
+    keybindButton.TextColor3 = Theme.Text
+    keybindButton.TextSize = 11
+    keybindButton.Font = Enum.Font.GothamBold
+    keybindButton.AutoButtonColor = false
+    keybindButton.Parent = labelSection
+
+    local keybindCorner = Instance.new('UICorner')
+    keybindCorner.CornerRadius = UDim.new(0, 6)
+    keybindCorner.Parent = keybindButton
+
+    local clickHint = Instance.new('TextLabel')
+    clickHint.Size = UDim2.new(0, 100, 0, 28)
+    clickHint.Position = UDim2.new(0, 85, 0, 26)
+    clickHint.BackgroundTransparency = 1
+    clickHint.Text = 'Click to change'
+    clickHint.TextColor3 = Theme.TextMuted
+    clickHint.TextSize = 11
+    clickHint.Font = Enum.Font.Gotham
+    clickHint.TextXAlignment = Enum.TextXAlignment.Left
+    clickHint.Parent = labelSection
+
+    local currentKey = config.CurrentValue
+    local listening = false
+    local settingId = config.Flag or config.Name
+    
+    self.Settings[settingId] = {
+        Type = "Keybind",
+        Value = currentKey,
+        Element = keybindFrame,
+        Set = nil
+    }
+
+    keybindButton.MouseButton1Click:Connect(function()
+        if listening then return end
+        listening = true
+        keybindButton.Text = '...'
+        
+        local conn
+        conn = UserInputService.InputBegan:Connect(function(input, processed)
+            if input.UserInputType == Enum.UserInputType.Keyboard then
+                currentKey = input.KeyCode
+                keybindButton.Text = currentKey.Name
+                self.Settings[settingId].Value = currentKey
+                listening = false
+                conn:Disconnect()
+                if config.Callback then
+                    config.Callback(currentKey)
+                end
+            end
+        end)
+    end)
+
+    table.insert(tab.Elements, keybindFrame)
+    
+    local returnTable = {
+        Set = function(value)
+            currentKey = value
+            keybindButton.Text = value and value.Name or 'NONE'
+            self.Settings[settingId].Value = value
+        end,
+        Get = function()
+            return currentKey
+        end,
+    }
+    
+    self.Settings[settingId].Set = returnTable.Set
+    return returnTable
+end
+
+function VNDevUI:CreateSlider(tab, config)
     local sliderFrame = Instance.new('Frame')
     sliderFrame.Name = config.Name
-    sliderFrame.Size = UDim2.new(1, 0, 0, 60)
-    sliderFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+    sliderFrame.Size = UDim2.new(1, 0, 0, 55)
+    sliderFrame.BackgroundColor3 = Theme.Element
     sliderFrame.BorderSizePixel = 0
     sliderFrame.LayoutOrder = #tab.Elements + 1
     sliderFrame.Parent = tab.Frame
@@ -708,104 +847,230 @@ function RallyUI:CreateSlider(tab, config)
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = sliderFrame
 
-    local stroke = Instance.new('UIStroke')
-    stroke.Color = Color3.fromRGB(138, 43, 226)
-    stroke.Thickness = 1
-    stroke.Transparency = 0.7
-    stroke.Parent = sliderFrame
+    -- Label
+    local labelTitle = Instance.new('TextLabel')
+    labelTitle.Size = UDim2.new(1, -20, 0, 14)
+    labelTitle.Position = UDim2.new(0, 15, 0, 8)
+    labelTitle.BackgroundTransparency = 1
+    labelTitle.Text = config.Label or config.Name:upper()
+    labelTitle.TextColor3 = Theme.TextMuted
+    labelTitle.TextSize = 10
+    labelTitle.Font = Enum.Font.GothamBold
+    labelTitle.TextXAlignment = Enum.TextXAlignment.Left
+    labelTitle.Parent = sliderFrame
 
-    local label = Instance.new('TextLabel')
-    label.Name = 'Label'
-    label.Size = UDim2.new(1, -20, 0, 20)
-    label.Position = UDim2.new(0, 12, 0, 8)
-    label.BackgroundTransparency = 1
-    label.Text = config.Name .. ': ' .. tostring(config.CurrentValue)
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.TextSize = 14
-    label.Font = Enum.Font.GothamMedium
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = sliderFrame
+    -- Value Display
+    local valueBox = Instance.new('Frame')
+    valueBox.Size = UDim2.new(0.3, -20, 0, 28)
+    valueBox.Position = UDim2.new(0.7, 5, 0, 22)
+    valueBox.BackgroundColor3 = Theme.Input
+    valueBox.BorderSizePixel = 0
+    valueBox.Parent = sliderFrame
 
-    local sliderTrack = Instance.new('Frame')
-    sliderTrack.Name = 'Track'
-    sliderTrack.Size = UDim2.new(1, -24, 0, 6)
-    sliderTrack.Position = UDim2.new(0, 12, 0, 38)
-    sliderTrack.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    sliderTrack.BorderSizePixel = 0
-    sliderTrack.Parent = sliderFrame
+    local valueCorner = Instance.new('UICorner')
+    valueCorner.CornerRadius = UDim.new(0, 6)
+    valueCorner.Parent = valueBox
 
-    local trackCorner = Instance.new('UICorner')
-    trackCorner.CornerRadius = UDim.new(1, 0)
-    trackCorner.Parent = sliderTrack
-
-    local sliderFill = Instance.new('Frame')
-    sliderFill.Name = 'Fill'
-    sliderFill.Size = UDim2.new(0, 0, 1, 0)
-    sliderFill.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
-    sliderFill.BorderSizePixel = 0
-    sliderFill.Parent = sliderTrack
-
-    local fillCorner = Instance.new('UICorner')
-    fillCorner.CornerRadius = UDim.new(1, 0)
-    fillCorner.Parent = sliderFill
-
-    local sliderButton = Instance.new('TextButton')
-    sliderButton.Name = 'Slider'
-    sliderButton.Size = UDim2.new(0, 16, 0, 16)
-    sliderButton.Position = UDim2.new(0, 0, 0.5, -8)
-    sliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    sliderButton.BorderSizePixel = 0
-    sliderButton.Text = ''
-    sliderButton.Parent = sliderTrack
-
-    local sliderCorner = Instance.new('UICorner')
-    sliderCorner.CornerRadius = UDim.new(1, 0)
-    sliderCorner.Parent = sliderButton
+    local valueLabel = Instance.new('TextLabel')
+    valueLabel.Size = UDim2.new(1, 0, 1, 0)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = tostring(config.CurrentValue or config.Range[1])
+    valueLabel.TextColor3 = Theme.Text
+    valueLabel.TextSize = 13
+    valueLabel.Font = Enum.Font.GothamMedium
+    valueLabel.Parent = valueBox
 
     local currentValue = config.CurrentValue or config.Range[1]
     local range = config.Range[2] - config.Range[1]
-    
-    -- Register setting
     local settingId = config.Flag or config.Name
+    
     self.Settings[settingId] = {
         Type = "Slider",
         Value = currentValue,
         Element = sliderFrame,
-        Set = nil -- Will be set below
+        Set = nil
     }
-    
-    -- Fix decimal display
+
     local function formatValue(value)
         if config.Increment and config.Increment < 1 then
-            -- Round to 1 decimal place for values like 0.6
             return math.floor(value * 10 + 0.5) / 10
         else
             return math.floor(value + 0.5)
         end
     end
 
-    local function updateSlider(value)
+    local function updateValue(value)
         currentValue = math.clamp(value, config.Range[1], config.Range[2])
-
         if config.Increment then
-            currentValue = math.floor(currentValue / config.Increment + 0.5)
-                * config.Increment
+            currentValue = math.floor(currentValue / config.Increment + 0.5) * config.Increment
         end
-        
-        -- Format the value properly
         currentValue = formatValue(currentValue)
-
-        local percentage = (currentValue - config.Range[1]) / range
-        sliderButton.Position = UDim2.new(percentage, -8, 0.5, -8)
-        sliderFill.Size = UDim2.new(percentage, 0, 1, 0)
-        label.Text = config.Name
-            .. ': '
-            .. tostring(currentValue)
-            .. (config.Suffix or '')
-
-        -- Update setting value
+        valueLabel.Text = tostring(currentValue) .. (config.Suffix or '')
         self.Settings[settingId].Value = currentValue
-        
+        if config.Callback then
+            config.Callback(currentValue)
+        end
+    end
+
+    updateValue(currentValue)
+
+    -- Make value box clickable to type
+    local valueInput = Instance.new('TextBox')
+    valueInput.Size = UDim2.new(1, 0, 1, 0)
+    valueInput.BackgroundTransparency = 1
+    valueInput.Text = ''
+    valueInput.PlaceholderText = ''
+    valueInput.TextTransparency = 1
+    valueInput.Parent = valueBox
+
+    valueInput.FocusLost:Connect(function(enterPressed)
+        local num = tonumber(valueInput.Text)
+        if num then
+            updateValue(num)
+        end
+        valueInput.Text = ''
+    end)
+
+    table.insert(tab.Elements, sliderFrame)
+    
+    local returnTable = {
+        Set = function(value)
+            updateValue(value)
+        end,
+        Get = function()
+            return currentValue
+        end,
+    }
+    
+    self.Settings[settingId].Set = returnTable.Set
+    return returnTable
+end
+
+-- HSV Color Slider (like in the screenshot)
+function VNDevUI:CreateHSVSlider(tab, config)
+    local hsvFrame = Instance.new('Frame')
+    hsvFrame.Name = config.Name
+    hsvFrame.Size = UDim2.new(0.48, 0, 0, 75)
+    hsvFrame.BackgroundTransparency = 1
+    hsvFrame.LayoutOrder = #tab.Elements + 1
+    hsvFrame.Parent = tab.Frame
+
+    -- Label with color indicator
+    local labelContainer = Instance.new('Frame')
+    labelContainer.Size = UDim2.new(1, 0, 0, 16)
+    labelContainer.BackgroundTransparency = 1
+    labelContainer.Parent = hsvFrame
+
+    local colorDot = Instance.new('Frame')
+    colorDot.Size = UDim2.new(0, 10, 0, 10)
+    colorDot.Position = UDim2.new(0, 0, 0.5, -5)
+    colorDot.BackgroundColor3 = Color3.fromHSV((config.CurrentValue or 0) / 360, 1, 1)
+    colorDot.BorderSizePixel = 0
+    colorDot.Parent = labelContainer
+
+    local dotCorner = Instance.new('UICorner')
+    dotCorner.CornerRadius = UDim.new(1, 0)
+    dotCorner.Parent = colorDot
+
+    local label = Instance.new('TextLabel')
+    label.Size = UDim2.new(1, -18, 1, 0)
+    label.Position = UDim2.new(0, 18, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = config.Label or config.Name
+    label.TextColor3 = Theme.TextMuted
+    label.TextSize = 10
+    label.Font = Enum.Font.GothamBold
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = labelContainer
+
+    -- Slider and Value container
+    local sliderContainer = Instance.new('Frame')
+    sliderContainer.Size = UDim2.new(1, 0, 0, 32)
+    sliderContainer.Position = UDim2.new(0, 0, 0, 24)
+    sliderContainer.BackgroundTransparency = 1
+    sliderContainer.Parent = hsvFrame
+
+    -- Rainbow slider track
+    local sliderTrack = Instance.new('Frame')
+    sliderTrack.Size = UDim2.new(0.55, 0, 0, 28)
+    sliderTrack.BackgroundColor3 = Color3.new(1, 1, 1)
+    sliderTrack.BorderSizePixel = 0
+    sliderTrack.Parent = sliderContainer
+
+    local trackCorner = Instance.new('UICorner')
+    trackCorner.CornerRadius = UDim.new(0, 6)
+    trackCorner.Parent = sliderTrack
+
+    -- Create rainbow gradient
+    local gradient = Instance.new('UIGradient')
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromHSV(0, 1, 1)),
+        ColorSequenceKeypoint.new(0.17, Color3.fromHSV(0.17, 1, 1)),
+        ColorSequenceKeypoint.new(0.33, Color3.fromHSV(0.33, 1, 1)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromHSV(0.5, 1, 1)),
+        ColorSequenceKeypoint.new(0.67, Color3.fromHSV(0.67, 1, 1)),
+        ColorSequenceKeypoint.new(0.83, Color3.fromHSV(0.83, 1, 1)),
+        ColorSequenceKeypoint.new(1, Color3.fromHSV(1, 1, 1)),
+    })
+    gradient.Parent = sliderTrack
+
+    -- Slider knob
+    local sliderKnob = Instance.new('Frame')
+    sliderKnob.Size = UDim2.new(0, 18, 0, 18)
+    sliderKnob.Position = UDim2.new(0, 0, 0.5, -9)
+    sliderKnob.BackgroundColor3 = Color3.new(1, 1, 1)
+    sliderKnob.BorderSizePixel = 0
+    sliderKnob.ZIndex = 2
+    sliderKnob.Parent = sliderTrack
+
+    local knobCorner = Instance.new('UICorner')
+    knobCorner.CornerRadius = UDim.new(1, 0)
+    knobCorner.Parent = sliderKnob
+
+    local knobStroke = Instance.new('UIStroke')
+    knobStroke.Color = Color3.fromRGB(60, 60, 70)
+    knobStroke.Thickness = 2
+    knobStroke.Parent = sliderKnob
+
+    -- Value box
+    local valueBox = Instance.new('Frame')
+    valueBox.Size = UDim2.new(0.42, -5, 0, 28)
+    valueBox.Position = UDim2.new(0.58, 5, 0, 0)
+    valueBox.BackgroundColor3 = Theme.Input
+    valueBox.BorderSizePixel = 0
+    valueBox.Parent = sliderContainer
+
+    local valueCorner = Instance.new('UICorner')
+    valueCorner.CornerRadius = UDim.new(0, 6)
+    valueCorner.Parent = valueBox
+
+    local valueLabel = Instance.new('TextLabel')
+    valueLabel.Size = UDim2.new(1, 0, 1, 0)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = tostring(config.CurrentValue or 0)
+    valueLabel.TextColor3 = Theme.Text
+    valueLabel.TextSize = 13
+    valueLabel.Font = Enum.Font.GothamMedium
+    valueLabel.Parent = valueBox
+
+    local currentValue = config.CurrentValue or 0
+    local settingId = config.Flag or config.Name
+    
+    self.Settings[settingId] = {
+        Type = "HSVSlider",
+        Value = currentValue,
+        Element = hsvFrame,
+        Set = nil
+    }
+
+    local function updateSlider(value)
+        currentValue = math.clamp(value, 0, 360)
+        currentValue = math.floor(currentValue + 0.5)
+        local percentage = currentValue / 360
+        sliderKnob.Position = UDim2.new(percentage, -9, 0.5, -9)
+        valueLabel.Text = tostring(currentValue)
+        colorDot.BackgroundColor3 = Color3.fromHSV(currentValue / 360, 1, 1)
+        self.Settings[settingId].Value = currentValue
         if config.Callback then
             config.Callback(currentValue)
         end
@@ -814,8 +1079,13 @@ function RallyUI:CreateSlider(tab, config)
     updateSlider(currentValue)
 
     local dragging = false
-    sliderButton.MouseButton1Down:Connect(function()
-        dragging = true
+    
+    sliderTrack.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            local percentage = math.clamp((input.Position.X - sliderTrack.AbsolutePosition.X) / sliderTrack.AbsoluteSize.X, 0, 1)
+            updateSlider(percentage * 360)
+        end
     end)
 
     UserInputService.InputEnded:Connect(function(input)
@@ -824,35 +1094,14 @@ function RallyUI:CreateSlider(tab, config)
         end
     end)
 
-    sliderTrack.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            local percentage = math.clamp(
-                (input.Position.X - sliderTrack.AbsolutePosition.X)
-                    / sliderTrack.AbsoluteSize.X,
-                0,
-                1
-            )
-            updateSlider(config.Range[1] + (percentage * range))
-        end
-    end)
-
     UserInputService.InputChanged:Connect(function(input)
-        if
-            dragging
-            and input.UserInputType == Enum.UserInputType.MouseMovement
-        then
-            local percentage = math.clamp(
-                (input.Position.X - sliderTrack.AbsolutePosition.X)
-                    / sliderTrack.AbsoluteSize.X,
-                0,
-                1
-            )
-            updateSlider(config.Range[1] + (percentage * range))
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local percentage = math.clamp((input.Position.X - sliderTrack.AbsolutePosition.X) / sliderTrack.AbsoluteSize.X, 0, 1)
+            updateSlider(percentage * 360)
         end
     end)
 
-    table.insert(tab.Elements, sliderFrame)
+    table.insert(tab.Elements, hsvFrame)
     
     local returnTable = {
         Set = function(value)
@@ -864,55 +1113,161 @@ function RallyUI:CreateSlider(tab, config)
     }
     
     self.Settings[settingId].Set = returnTable.Set
-
     return returnTable
 end
 
-function RallyUI:CreateConfigSection(tab)
-    -- Config Name Input
-    local configInputFrame = Instance.new('Frame')
-    configInputFrame.Name = 'ConfigInput'
-    configInputFrame.Size = UDim2.new(1, 0, 0, 42)
-    configInputFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
-    configInputFrame.BorderSizePixel = 0
-    configInputFrame.LayoutOrder = #tab.Elements + 1
-    configInputFrame.Parent = tab.Frame
+-- Two column layout container for HSV sliders
+function VNDevUI:CreateTwoColumn(tab)
+    local container = Instance.new('Frame')
+    container.Name = 'TwoColumnContainer'
+    container.Size = UDim2.new(1, 0, 0, 75)
+    container.BackgroundTransparency = 1
+    container.LayoutOrder = #tab.Elements + 1
+    container.Parent = tab.Frame
+
+    table.insert(tab.Elements, container)
+    
+    return {
+        Frame = container,
+        Left = function(self)
+            return container
+        end,
+        Right = function(self)
+            return container
+        end
+    }
+end
+
+function VNDevUI:CreateButton(tab, config)
+    local button = Instance.new('TextButton')
+    button.Name = config.Name
+    button.Size = UDim2.new(1, 0, 0, 42)
+    button.BackgroundColor3 = Theme.Element
+    button.BorderSizePixel = 0
+    button.AutoButtonColor = false
+    button.Text = config.Name
+    button.TextColor3 = Theme.Text
+    button.TextSize = 13
+    button.Font = Enum.Font.GothamMedium
+    button.LayoutOrder = #tab.Elements + 1
+    button.Parent = tab.Frame
+
+    local corner = Instance.new('UICorner')
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = button
+
+    button.MouseEnter:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.15), {BackgroundColor3 = Theme.ElementHover}):Play()
+    end)
+
+    button.MouseLeave:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.15), {BackgroundColor3 = Theme.Element}):Play()
+    end)
+
+    button.MouseButton1Click:Connect(function()
+        if config.Callback then
+            config.Callback()
+        end
+    end)
+
+    table.insert(tab.Elements, button)
+    return button
+end
+
+function VNDevUI:CreateTextbox(tab, config)
+    local inputFrame = Instance.new('Frame')
+    inputFrame.Name = config.Name
+    inputFrame.Size = UDim2.new(1, 0, 0, 50)
+    inputFrame.BackgroundColor3 = Theme.Element
+    inputFrame.BorderSizePixel = 0
+    inputFrame.LayoutOrder = #tab.Elements + 1
+    inputFrame.Parent = tab.Frame
+
+    local corner = Instance.new('UICorner')
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = inputFrame
+
+    local label = Instance.new('TextLabel')
+    label.Size = UDim2.new(1, -20, 0, 14)
+    label.Position = UDim2.new(0, 15, 0, 8)
+    label.BackgroundTransparency = 1
+    label.Text = (config.Label or config.Name):upper()
+    label.TextColor3 = Theme.TextMuted
+    label.TextSize = 10
+    label.Font = Enum.Font.GothamBold
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = inputFrame
+
+    local textBox = Instance.new('TextBox')
+    textBox.Size = UDim2.new(1, -30, 0, 22)
+    textBox.Position = UDim2.new(0, 15, 0, 24)
+    textBox.BackgroundColor3 = Theme.Input
+    textBox.BorderSizePixel = 0
+    textBox.PlaceholderText = config.Placeholder or ''
+    textBox.Text = config.CurrentValue or ''
+    textBox.TextColor3 = Theme.Text
+    textBox.PlaceholderColor3 = Theme.TextMuted
+    textBox.TextSize = 12
+    textBox.Font = Enum.Font.Gotham
+    textBox.TextXAlignment = Enum.TextXAlignment.Left
+    textBox.ClearTextOnFocus = false
+    textBox.Parent = inputFrame
 
     local inputCorner = Instance.new('UICorner')
-    inputCorner.CornerRadius = UDim.new(0, 8)
-    inputCorner.Parent = configInputFrame
+    inputCorner.CornerRadius = UDim.new(0, 4)
+    inputCorner.Parent = textBox
 
-    local inputStroke = Instance.new('UIStroke')
-    inputStroke.Color = Color3.fromRGB(138, 43, 226)
-    inputStroke.Thickness = 1
-    inputStroke.Transparency = 0.7
-    inputStroke.Parent = configInputFrame
+    local inputPadding = Instance.new('UIPadding')
+    inputPadding.PaddingLeft = UDim.new(0, 8)
+    inputPadding.Parent = textBox
 
-    local configInput = Instance.new('TextBox')
-    configInput.Size = UDim2.new(1, -24, 1, 0)
-    configInput.Position = UDim2.new(0, 12, 0, 0)
-    configInput.BackgroundTransparency = 1
-    configInput.PlaceholderText = 'Config Name...'
-    configInput.Text = ''
-    configInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-    configInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 135)
-    configInput.TextSize = 14
-    configInput.Font = Enum.Font.Gotham
-    configInput.TextXAlignment = Enum.TextXAlignment.Left
-    configInput.Parent = configInputFrame
+    local settingId = config.Flag or config.Name
+    self.Settings[settingId] = {
+        Type = "Textbox",
+        Value = config.CurrentValue or '',
+        Element = inputFrame,
+        Set = nil
+    }
 
-    table.insert(tab.Elements, configInputFrame)
+    textBox.FocusLost:Connect(function()
+        self.Settings[settingId].Value = textBox.Text
+        if config.Callback then
+            config.Callback(textBox.Text)
+        end
+    end)
 
-    -- Save Config Button
+    table.insert(tab.Elements, inputFrame)
+    
+    local returnTable = {
+        Set = function(value)
+            textBox.Text = value
+            self.Settings[settingId].Value = value
+        end,
+        Get = function()
+            return textBox.Text
+        end,
+    }
+    
+    self.Settings[settingId].Set = returnTable.Set
+    return returnTable
+end
+
+function VNDevUI:CreateConfigSection(tab)
+    self:CreateTextbox(tab, {
+        Name = 'ConfigName',
+        Label = 'CONFIG NAME',
+        Placeholder = 'Enter config name...',
+        Flag = 'ConfigNameInput'
+    })
+
     self:CreateButton(tab, {
         Name = 'Save Config',
         Callback = function()
-            local configName = configInput.Text
+            local configName = self.Settings['ConfigNameInput'] and self.Settings['ConfigNameInput'].Value or ''
             if configName and configName ~= '' then
                 local success = self.ConfigManager:SaveConfig(configName, self:GetCurrentSettings())
                 if success then
                     self:Notify("Config Saved", "Saved as: " .. configName)
-                    configInput.Text = ''
                 else
                     self:Notify("Error", "Failed to save config")
                 end
@@ -922,17 +1277,15 @@ function RallyUI:CreateConfigSection(tab)
         end
     })
 
-    -- Load Config Button
     self:CreateButton(tab, {
         Name = 'Load Config',
         Callback = function()
-            local configName = configInput.Text
+            local configName = self.Settings['ConfigNameInput'] and self.Settings['ConfigNameInput'].Value or ''
             if configName and configName ~= '' then
                 local settings = self.ConfigManager:LoadConfig(configName)
                 if settings then
                     self:ApplySettings(settings)
                     self:Notify("Config Loaded", "Loaded: " .. configName)
-                    configInput.Text = ''
                 else
                     self:Notify("Error", "Config not found")
                 end
@@ -942,16 +1295,14 @@ function RallyUI:CreateConfigSection(tab)
         end
     })
 
-    -- Delete Config Button
     self:CreateButton(tab, {
         Name = 'Delete Config',
         Callback = function()
-            local configName = configInput.Text
+            local configName = self.Settings['ConfigNameInput'] and self.Settings['ConfigNameInput'].Value or ''
             if configName and configName ~= '' then
                 local success = self.ConfigManager:DeleteConfig(configName)
                 if success then
                     self:Notify("Config Deleted", "Deleted: " .. configName)
-                    configInput.Text = ''
                 else
                     self:Notify("Error", "Failed to delete config")
                 end
@@ -961,7 +1312,6 @@ function RallyUI:CreateConfigSection(tab)
         end
     })
 
-    -- List Configs Button
     self:CreateButton(tab, {
         Name = 'List Configs',
         Callback = function()
@@ -977,15 +1327,17 @@ function RallyUI:CreateConfigSection(tab)
     })
 end
 
-function RallyUI:GetCurrentSettings()
+function VNDevUI:GetCurrentSettings()
     local settings = {}
     for id, setting in pairs(self.Settings) do
-        settings[id] = setting.Value
+        if id ~= 'ConfigNameInput' then
+            settings[id] = setting.Value
+        end
     end
     return settings
 end
 
-function RallyUI:ApplySettings(settings)
+function VNDevUI:ApplySettings(settings)
     for id, value in pairs(settings) do
         if self.Settings[id] and self.Settings[id].Set then
             self.Settings[id].Set(value)
@@ -993,10 +1345,10 @@ function RallyUI:ApplySettings(settings)
     end
 end
 
-function RallyUI:Destroy()
+function VNDevUI:Destroy()
     if self.ScreenGui then
         self.ScreenGui:Destroy()
     end
 end
 
-return RallyUI
+return VNDevUI
